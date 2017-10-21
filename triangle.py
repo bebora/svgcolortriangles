@@ -1,6 +1,6 @@
 # -*- coding: latin-1 -*-
 '''
-Usage: python triangle.py width height edgelen randomness_points randomness_colors left_color right_color uniform_mode > file.svg
+Usage: python triangle.py width height edgelen randomness_points randomness_colors left_color right_color uniform_mode random_colors > file.svg
 '''
 import random
 import math
@@ -9,25 +9,24 @@ import json
 
 def create_array_map(length, height, edgelen):
     '''
-    Ritorna una lista di vertici con cui costruire triangoli equilateri di lato edgelen
-    Le righe di indice dispari sono spostate a destra di edgelen/2
+    Return a list of vertices that can be used to create equilater triangles with edlegen as lenght of each side
+    Rows with odd index are shifted to the right by edgelen/2
     '''
-    n_riga_max = 5+int(float(height)/(edgelen*math.sin(math.pi/3.0)))
-    n_colonna_max = 5+int(float(length)/edgelen)
+    n_row_max = 5+int(float(height)/(edgelen*math.sin(math.pi/3.0)))
+    n_column_max = 5+int(float(length)/edgelen)
     temp_array = []
-    for i in range(0, n_riga_max):
-        for j in range(0, n_colonna_max):
+    for i in range(0, n_row_max):
+        for j in range(0, n_column_max):
             offset = 0
             if i%2 == 1:
                 offset = 1
             temp_array.append([float(j*edgelen+offset*edgelen/2.0), i*edgelen*math.sin(math.pi/3.0)])
-    #return n_riga_max, n_colonna_max, temp_array
-    return n_colonna_max, temp_array
+    return n_column_max, temp_array
 
 def move_points_random(arry, radius):
     '''
-    Ritorna una lista di vertici spostati rispetto alla lista argomento
-    Lo spostamento è radiale con angolo casuale e raggio compreso tra 0.3 radius e 1 radius
+    Returns a list of vertices moved from another list
+    The movement is radial with random angle and radius between 0.3*radius and 1*radius
     '''
     for i in range(0, len(arry)):
         effective_radius = random.randint(30, 100)*radius/100.0
@@ -176,12 +175,11 @@ def save_config(namefile, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9):
     json.dump(config, fp)
     fp.close()
 def main():
-#parametri argv
     if len(sys.argv) < 2:
-        larghezza, altezza, size_edge, randomness, color_randomness, left_color, right_color, uniform_rgb_offset, random_colors = load_config("config.json")
+        width, heigth, size_edge, randomness, color_randomness, left_color, right_color, uniform_rgb_offset, random_colors = load_config("config.json")
     else:
-        larghezza = int(sys.argv[1])
-        altezza = int(sys.argv[2])
+        width = int(sys.argv[1])
+        heigth = int(sys.argv[2])
         size_edge = float(sys.argv[3])
         randomness = float(sys.argv[4])
         color_randomness = int(sys.argv[5])
@@ -189,13 +187,13 @@ def main():
         right_color = sys.argv[7]
         uniform_rgb_offset = int(sys.argv[8])
         random_colors = int (sys.argv[9])
-        save_config("config.json", larghezza, altezza, size_edge, randomness, color_randomness, left_color, right_color, uniform_rgb_offset, random_colors)
-    n_colonne, array = create_array_map(larghezza, altezza, size_edge)
+        save_config("config.json", width, heigth, size_edge, randomness, color_randomness, left_color, right_color, uniform_rgb_offset, random_colors)
+    n_columns, array = create_array_map(width, heigth, size_edge)
     array = move_points_random(array, randomness*size_edge/100)
 
 
-    testo_base = '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg"\n'
-    testo_base += 'version="1.1"\nviewBox="0 0 %s %s"\nheight="%smm"\nwidth="%smm">\n'%(larghezza, altezza, altezza, larghezza)
+    base_text = '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg"\n'
+    base_text += 'version="1.1"\nviewBox="0 0 %s %s"\nheight="%smm"\nwidth="%smm">\n'%(width, heigth, heigth, width)
     if random_colors == 1:
         a = random.randint(0, 255)
         b = random.randint(0, 255)
@@ -203,27 +201,24 @@ def main():
         d = random.randint(0, 255)
         e = random.randint(0, 255)
         f = random.randint(0, 255)
-
         left_color = '%02x%02x%02x'%(a, b, c)
-        #right_color = '%02x%02x%02x'%(255-a, 255-b, 255-c)
         right_color = '%02x%02x%02x'%(d, e, f)
     color_1 = str(rgb_to_int(left_color))
     color_2 = str(rgb_to_int(right_color))
-    testo_base += '<g transform="translate(%s,%s)"\n>'%(-size_edge, -size_edge)
-    testo_base += '<defs>\n<linearGradient id="grad1" x1="0%%" y1="0%%" x2="100%%" y2="0%%">\n<stop offset="0%%" style="stop-color:rgb%s;stop-opacity:1" />\n<stop offset="100%%" style="stop-color:rgb%s;stop-opacity:1" />\n</linearGradient>\n</defs>\n'%(color_1, color_2)
-    testo_base += '<path id="rect" d="m %s,%s %s,0.0 0.0,%s %s,0.0 z" fill="url(#grad1)"/>'%(size_edge, size_edge, larghezza, altezza, -larghezza)
-    print testo_base
-    for t in range(0, len(array)-n_colonne):
-        if t%n_colonne != n_colonne-1:
-            offset_riga_dispari = (t/n_colonne)%2
-            vertices = [array[t], array[t+1], array[t+n_colonne+offset_riga_dispari]]
-            print add_path(vertices, hard_gradient_center(vertices, larghezza, left_color, right_color, color_randomness, uniform_rgb_offset))
-    for t in range(n_colonne, len(array)-1):
-        if t%n_colonne != n_colonne-1:
-            offset_riga_dispari = (t/n_colonne)%2
-            vertices = [array[t], array[t+1], array[t-n_colonne+offset_riga_dispari]]
-            print add_path(vertices, hard_gradient_center(vertices, larghezza, left_color, right_color, color_randomness, uniform_rgb_offset))
-    #insert_vertex(array)
+    base_text += '<g transform="translate(%s,%s)"\n>'%(-size_edge, -size_edge)
+    base_text += '<defs>\n<linearGradient id="grad1" x1="0%%" y1="0%%" x2="100%%" y2="0%%">\n<stop offset="0%%" style="stop-color:rgb%s;stop-opacity:1" />\n<stop offset="100%%" style="stop-color:rgb%s;stop-opacity:1" />\n</linearGradient>\n</defs>\n'%(color_1, color_2)
+    base_text += '<path id="rect" d="m %s,%s %s,0.0 0.0,%s %s,0.0 z" fill="url(#grad1)"/>'%(size_edge, size_edge, width, heigth, -width)
+    print base_text
+    for t in range(0, len(array)-n_columns):
+        if t%n_columns != n_columns-1:
+            offset_odd_row = (t/n_columns)%2
+            vertices = [array[t], array[t+1], array[t+n_columns+offset_odd_row]]
+            print add_path(vertices, hard_gradient_center(vertices, width, left_color, right_color, color_randomness, uniform_rgb_offset))
+    for t in range(n_columns, len(array)-1):
+        if t%n_columns != n_columns-1:
+            offset_odd_row = (t/n_columns)%2
+            vertices = [array[t], array[t+1], array[t-n_columns+offset_odd_row]]
+            print add_path(vertices, hard_gradient_center(vertices, width, left_color, right_color, color_randomness, uniform_rgb_offset))
     print '</g>\n</svg>'
 if __name__ == "__main__":
     main()
