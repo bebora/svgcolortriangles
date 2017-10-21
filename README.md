@@ -18,5 +18,5 @@ Usage:
   right_color = Color on the right, must be written as #xxxxxx or xxxxxx
   uniform_mode = Set it to 1 to make the color randomizer affect only brightness of each triangle
   For example:
-  python triangle.py 1920 1080 35 20 #ff662a #22ffe3 1 > example.svg
+  python triangle.py 1920 1080 100 35 20 #ff662a #22ffe3 1 > example.svg
 ```
