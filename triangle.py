@@ -194,7 +194,7 @@ def main():
     array = move_points_random(array, randomness*size_edge/100)
 
 
-    testo_base = '<?xml version="1.0" encoding="UTF-8"?>\n<svg\n'
+    testo_base = '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg"\n'
     testo_base += 'version="1.1"\nviewBox="0 0 %s %s"\nheight="%smm"\nwidth="%smm">\n'%(larghezza, altezza, altezza, larghezza)
     if random_colors == 1:
         a = random.randint(0, 255)
