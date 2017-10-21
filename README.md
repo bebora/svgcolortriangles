@@ -21,3 +21,5 @@ Usage:
   For example:
   python triangle.py 1920 1080 100 35 20 '#ff662a' '#22ffe3' 1 0 > example.svg
 ```
+example.svg with above example
+<img src="./example.svg">
