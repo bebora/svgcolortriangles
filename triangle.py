@@ -193,7 +193,7 @@ def main():
 
 
     base_text = '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg"\n'
-    base_text += 'version="1.1"\nviewBox="0 0 %s %s"\nheight="%smm"\nwidth="%smm">\n'%(width, heigth, heigth, width)
+    base_text += 'version="1.1"\nviewBox="0 0 %s %s"\nheight="%spx"\nwidth="%spx">\n'%(width, heigth, heigth, width)
     if random_colors == 1:
         a = random.randint(0, 255)
         b = random.randint(0, 255)
