@@ -1,12 +1,11 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-'''
-Usage: python3 triangle.py width height edge_len randomness_points randomness_colors left_color right_color uniform_mode random_colors > file.svg
-'''
+
 import random
 import math
 import sys
 import json
+
 
 class Color:
     def set_random(self):
@@ -22,7 +21,7 @@ class Color:
     def set_hex(self, hexcode):
         temp = hexcode.strip('#')
         if len(temp) is not 6:
-            print(hexcode,"isn't a valid color")
+            print(hexcode, "isn't a valid color")
             return
         self.set_rgb(
             int(temp[0:2], 16),
@@ -31,10 +30,11 @@ class Color:
         )
 
     def get_hex(self):
+        '''
+        Return color in #hex format
+        '''
         try:
-            s="#{:02x}{:02x}{:02x}".format(self.r, self.g, self.b)
             return "#{:02x}{:02x}{:02x}".format(self.r, self.g, self.b)
-        
         except:
             print(self.r, self.g, self.b)
 
@@ -59,39 +59,30 @@ class Color:
             self.b = 0
         elif self.b > 255:
             self.b = 255
-    
+
     def shuffle_rgb(self, randomness):
         self.r += random.randint(-randomness, randomness)
         self.g += random.randint(-randomness, randomness)
         self.b += random.randint(-randomness, randomness)
         self.normalize_channels()
-    
+
     def shuffle_brightness(self, randomness):
         offset = random.randint(-randomness, randomness)
         self.r += offset
         self.g += offset
         self.b += offset
-        self.normalize_channels()        
+        self.normalize_channels()
 
     def print_rgb(self):
+        '''
+        Print color channel values
+        '''
         print('\033[31mR:\033[0m', self.r)
         print('\033[32mG:\033[0m', self.g)
         print('\033[34mB:\033[0m', self.b)
 
-class Config():
-    def load(self, filename):
-        with open(filename, 'r') as fp:
-            jconf = json.load(fp)
-            self.first_color = Color(jconf['first_color'])
-            self.second_color = Color(jconf['second_color'])
-            self.edge_len = jconf['edge_len']
-            self.random_colors = jconf['random_colors']
-            self.random_vertex = jconf['random_vertex']
-            self.height = jconf['height']
-            self.width = jconf['width']
-            self.max_color_offset = jconf['max_color_offset']
-            self.uniform_rgb_offset = jconf['uniform_rgb_offset']
 
+class Config():
     def load_default(self):
         self.first_color = Color('#000000')
         self.second_color = Color('#ffffff')
@@ -103,14 +94,35 @@ class Config():
         self.max_color_offset = 20
         self.uniform_rgb_offset = True
 
-    def __init__(self, filename):
-        self.load_default()
-        self.load(filename)
+    def load(self, filename):
+        try:
+            with open(filename, 'r') as fp:
+                jconf = json.load(fp)
+                self.first_color = Color(jconf['first_color'])
+                self.second_color = Color(jconf['second_color'])
+                self.edge_len = jconf['edge_len']
+                self.random_colors = jconf['random_colors']
+                self.random_vertex = jconf['random_vertex']
+                self.height = jconf['height']
+                self.width = jconf['width']
+                self.max_color_offset = jconf['max_color_offset']
+                self.uniform_rgb_offset = jconf['uniform_rgb_offset']
+        except:
+            print("Error reading", filename, file=sys.stderr)
+            self.load_default()
+
+    def __init__(self, *args):
+        if len(args) is 0:
+            self.load_default()
+        else:
+            self.load(args[0])
+
 
 class Point():
     def __init__(self, x, y):
         self.x = x
         self.y = y
+
 
 class PointsMap():
     def generate(self, length, height, edge_len):
@@ -119,17 +131,19 @@ class PointsMap():
         triangles with edlegen as lenght of each side
         Rows with odd index are shifted to the right by edge_len/2
         '''
-        n_row = 5 + int(float(height) / (edge_len * math.sin(math.pi / 3.0)))
-        n_column = 5 + int(float(length) / edge_len)
+        n_row = 8 + int(float(height) / (edge_len * math.sin(math.pi / 3.0)))
+        n_column = 8 + int(float(length) / edge_len)
         temp_array = []
         for i in range(0, n_row):
             for j in range(0, n_column):
                 offset = 0
                 if i % 2 == 1:
                     offset = 1
+                x_off = edge_len * 3
+                y_off = edge_len * 2 * math.sin(math.pi / 3.0)
                 temp_array.append(Point(
-                    float(j * edge_len + offset * edge_len / 2.0),
-                    i * edge_len * math.sin(math.pi / 3.0)))
+                    float(j * edge_len + offset * edge_len / 2.0) - x_off,
+                    i * edge_len * math.sin(math.pi / 3.0) - y_off))
         self.n_column = n_column
         self.points = temp_array
 
@@ -186,19 +200,23 @@ class Triangle:
         zero = Point(0, 0)
         self.set_points(zero, zero, zero)
         self.color = Color()
+
     def export_center(self):
-        c=self.get_center()
+        c = self.get_center()
         return '<circle cx="{}" cy="{}" r="5" fill="red" />'.format(c.x, c.y)
+
     def export_svg(self):
         '''
         Return the triangle element as svg path
         '''
-        s = '<path d="M {},{} L{},{} L{},{} Z" style="fill:{}"/>'
+        s = ('<path d="M {:.2f},{:.2f} L{:.2f},{:.2f} L{:.2f},{:.2f} Z" '
+             'style="fill:{}"/>')
         s = s.format(self.p1.x, self.p1.y,
                      self.p2.x, self.p2.y,
                      self.p3.x, self.p3.y,
                      self.color.get_hex())
-        return s #+self.export_center()
+        return s
+
 
 class SvgBox():
     def __init__(self, width, height):
@@ -210,10 +228,9 @@ class SvgBox():
                      'xmlns="http://www.w3.org/2000/svg"\n'
                      'version="1.1"\n'
                      'viewBox="0 0 {w} {h}"\n'
-                     'height="{h}"\nwidth="{w}">\n'
-                     '<g transform="translate(-100.0,-100.0)">\n')\
+                     'height="{h}"\nwidth="{w}">\n')\
                      .format(w=width, h=height)
-        self.tbody = ''
+        self.tbody = '<g transform="translate(-{},-{})">\n'
         self.defs = ('<defs>\n<linearGradient id="grad1" '
                      'x1="0%" y1="0%" x2="100%" y2="0%">\n'
                      '<stop offset="0%" style="stop-color:{};'
@@ -221,19 +238,30 @@ class SvgBox():
                      '<stop offset="100%" style="stop-color:{};'
                      'stop-opacity:1" />\n</linearGradient>\n</defs>\n')
         self.end = '</g>\n</svg>'
-    def set_bg_colors(self, left_color, right_color):
+
+    def set_bg(self, width, height, left_color, right_color):
         self.defs = self.defs.format(left_color.get_hex(),
                                      right_color.get_hex())
+        self.defs += ('<path id="rect" d="m {},{} {},0.0 0.0,{} {},0.0 z" '
+                      'fill="url(#grad1)"/>').format(0,
+                                                     0,
+                                                     width,
+                                                     height,
+                                                     -width)
+    def set_offset(self, edge_len):
+        self.tbody = self.tbody.format(edge_len, edge_len)
 
     def add_body(self, text):
-        self.tbody +=text
+        self.tbody += text
+
     def export(self):
         print(self.head+self.defs+self.tbody+self.end)
+
 
 def main():
     config = Config("config.json")
     map = PointsMap(config.width, config.height, config.edge_len)
-    map.shuffle_points(config.random_vertex * config.edge_len // 100)
+    map.shuffle_points(config.random_vertex * config.edge_len / 100)
     box = SvgBox(config.width, config.height)
     left_color = Color()
     right_color = Color()
@@ -243,18 +271,12 @@ def main():
     else:
         left_color = config.first_color
         right_color = config.second_color
-    box.set_bg_colors(left_color, right_color)
-    box.add_body(('<path id="rect" d="m {},{} {},0.0 0.0,{} {},0.0 z" '
-                  'fill="url(#grad1)"/>').format(
-                                                config.edge_len,
-                                                config.edge_len,
-                                                config.width,
-                                                config.height,
-                                                -config.width))
-    #/\ - shape
+    box.set_offset(config.edge_len)
+    box.set_bg(config.width, config.height, left_color, right_color)
+    # /\ - shape
     for i in range(0, len(map.points)-map.n_column):
-        if i%map.n_column != map.n_column-1:
-            offset_odd_row = (i//map.n_column)%2
+        if i % map.n_column != map.n_column-1:
+            offset_odd_row = (i//map.n_column) % 2
             t = Triangle()
             t.set_points(
                 map.points[i],
@@ -265,12 +287,11 @@ def main():
                 t.color.shuffle_brightness(config.max_color_offset)
             else:
                 t.color.shuffle_rgb(config.max_color_offset)
-            box.add_body(t.export_svg()+'\n')   
-    #\/ - shape
-    
+            box.add_body(t.export_svg()+'\n')
+    # \/ - shape
     for i in range(map.n_column, len(map.points)-1):
-        if i%map.n_column != map.n_column-1:
-            offset_odd_row = (i//map.n_column)%2
+        if i % map.n_column != map.n_column-1:
+            offset_odd_row = (i//map.n_column) % 2
             t = Triangle()
             t.set_points(
                 map.points[i],
@@ -282,7 +303,8 @@ def main():
             else:
                 t.color.shuffle_rgb(config.max_color_offset)
             box.add_body(t.export_svg()+'\n')
-    
     box.export()
+
+
 if __name__ == "__main__":
     main()
