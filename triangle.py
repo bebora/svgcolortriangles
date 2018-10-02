@@ -84,8 +84,8 @@ class Color:
 
 class Config():
     def load_default(self):
-        self.first_color = Color('#000000')
-        self.second_color = Color('#ffffff')
+        self.left_color = Color('#000000')
+        self.right_color = Color('#ffffff')
         self.edge_len = 50
         self.random_colors = True
         self.random_vertex = 35
@@ -98,8 +98,8 @@ class Config():
         try:
             with open(filename, 'r') as fp:
                 jconf = json.load(fp)
-                self.first_color = Color(jconf['first_color'])
-                self.second_color = Color(jconf['second_color'])
+                self.left_color = Color(jconf['left_color'])
+                self.right_color = Color(jconf['right_color'])
                 self.edge_len = jconf['edge_len']
                 self.random_colors = jconf['random_colors']
                 self.random_vertex = jconf['random_vertex']
@@ -269,8 +269,8 @@ def main():
         left_color.set_random()
         right_color.set_random()
     else:
-        left_color = config.first_color
-        right_color = config.second_color
+        left_color = config.left_color
+        right_color = config.right_color
     box.set_offset(config.edge_len)
     box.set_bg(config.width, config.height, left_color, right_color)
     # /\ - shape
