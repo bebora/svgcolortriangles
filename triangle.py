@@ -33,8 +33,6 @@ class Color:
     def get_hex(self):
         try:
             s="#{:02x}{:02x}{:02x}".format(self.r, self.g, self.b)
-            #if len(s)!=7:
-            #    self.print_rgb()
             return "#{:02x}{:02x}{:02x}".format(self.r, self.g, self.b)
         
         except:
@@ -173,18 +171,16 @@ class Triangle:
         '''
         center = self.get_center()
         if center.x < 0:
-            self.color = l_color
+            self.color = Color(l_color.get_hex())
         elif center.x > max_x:
-            self.color = r_color
+            self.color = Color(r_color.get_hex())
         else:
             percent = (center.x) / max_x
             r = (1-percent) * l_color.r + percent * r_color.r
             g = (1-percent) * l_color.g + percent * r_color.g
             b = (1-percent) * l_color.b + percent * r_color.b
-            #print((int(r), int(g), int(b)))
             self.color = Color(int(r), int(g), int(b))
             self.color.normalize_channels()
-            #self.color.print_rgb()
 
     def __init__(self):
         zero = Point(0, 0)
@@ -202,7 +198,7 @@ class Triangle:
                      self.p2.x, self.p2.y,
                      self.p3.x, self.p3.y,
                      self.color.get_hex())
-        return s+self.export_center()
+        return s #+self.export_center()
 
 class SvgBox():
     def __init__(self, width, height):
@@ -255,7 +251,6 @@ def main():
                                                 config.width,
                                                 config.height,
                                                 -config.width))
-    
     #/\ - shape
     for i in range(0, len(map.points)-map.n_column):
         if i%map.n_column != map.n_column-1:
@@ -270,7 +265,7 @@ def main():
                 t.color.shuffle_brightness(config.max_color_offset)
             else:
                 t.color.shuffle_rgb(config.max_color_offset)
-            box.add_body(t.export_svg()+'\n')
+            box.add_body(t.export_svg()+'\n')   
     #\/ - shape
     
     for i in range(map.n_column, len(map.points)-1):
@@ -287,6 +282,7 @@ def main():
             else:
                 t.color.shuffle_rgb(config.max_color_offset)
             box.add_body(t.export_svg()+'\n')
+    
     box.export()
 if __name__ == "__main__":
     main()
