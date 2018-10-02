@@ -1,224 +1,292 @@
-# -*- coding: latin-1 -*-
+#!/usr/bin/python3
+# -*- coding: utf-8 -*-
 '''
-Usage: python triangle.py width height edgelen randomness_points randomness_colors left_color right_color uniform_mode random_colors > file.svg
+Usage: python3 triangle.py width height edge_len randomness_points randomness_colors left_color right_color uniform_mode random_colors > file.svg
 '''
 import random
 import math
 import sys
 import json
 
-def create_array_map(length, height, edgelen):
-    '''
-    Return a list of vertices that can be used to create equilater triangles with edlegen as lenght of each side
-    Rows with odd index are shifted to the right by edgelen/2
-    '''
-    n_row_max = 5+int(float(height)/(edgelen*math.sin(math.pi/3.0)))
-    n_column_max = 5+int(float(length)/edgelen)
-    temp_array = []
-    for i in range(0, n_row_max):
-        for j in range(0, n_column_max):
-            offset = 0
-            if i%2 == 1:
-                offset = 1
-            temp_array.append([float(j*edgelen+offset*edgelen/2.0), i*edgelen*math.sin(math.pi/3.0)])
-    return n_column_max, temp_array
+class Color:
+    def set_random(self):
+        self.r = random.randint(0, 255)
+        self.g = random.randint(0, 255)
+        self.b = random.randint(0, 255)
 
-def move_points_random(arry, radius):
-    '''
-    Returns a list of vertices moved from another list
-    The movement is radial with random angle and radius between 0.3*radius and 1*radius
-    '''
-    for i in range(0, len(arry)):
-        effective_radius = random.randint(30, 100)*radius/100.0
-        angle = random.randint(0, 360)*2*math.pi/360
-        arry[i][0] += effective_radius*math.cos(angle)
-        arry[i][1] += effective_radius*math.sin(angle)
-    return arry
+    def set_rgb(self, r, g, b):
+        self.r = r
+        self.g = g
+        self.b = b
 
-def rgb_to_int(color_string):
-    '''
-    Reads hex color as #xxxxxx or xxxxxx and returns RGB components as integers
-    '''
-    a = []
-    if color_string[0] == '#':
-        color_string = color_string[1:]
-    if len(color_string) != 6:
-        print "Error in color argument"
-        exit()
-    while color_string:
-        a.append(int(color_string[0:2], 16))
-        color_string = color_string[2:]
-    return a[0], a[1], a[2]
+    def set_hex(self, hexcode):
+        temp = hexcode.strip('#')
+        if len(temp) is not 6:
+            print(hexcode,"isn't a valid color")
+            return
+        self.set_rgb(
+            int(temp[0:2], 16),
+            int(temp[2:4], 16),
+            int(temp[4:6], 16)
+        )
 
-def hard_gradient(x_cor, max_x, first_color, second_color, randomness):
-    '''
-    Returns linear gradient color between two colors depending on position of the first vertex
-    '''
-    a, b, c = rgb_to_int(first_color)
-    d, e, f = rgb_to_int(second_color)
-    percent = x_cor/float(max_x)
-    if x_cor < 0:
-        percent = 0
-    if x_cor > max_x:
-        percent = 1.0
-    a = d*percent+a*(1-percent)
-    b = e*percent+b*(1-percent)
-    c = f*percent+c*(1-percent)
-    return near_random_color(a, b, c, randomness)
+    def get_hex(self):
+        try:
+            s="#{:02x}{:02x}{:02x}".format(self.r, self.g, self.b)
+            #if len(s)!=7:
+            #    self.print_rgb()
+            return "#{:02x}{:02x}{:02x}".format(self.r, self.g, self.b)
+        
+        except:
+            print(self.r, self.g, self.b)
 
-def hard_gradient_center(vertices, max_x, first_color, second_color, randomness, uniform):
-    '''
-    Returns linear gradient color between two colors depending on position of all vertices
-    '''
-    a, b, c = rgb_to_int(first_color)
-    d, e, f = rgb_to_int(second_color)
-    x_cor = (vertices[0][0]+vertices[1][0]+vertices[2][0])/3.0
-    if x_cor < 0:
-        x_cor = 0
-    if x_cor > max_x:
-        x_cor = max_x
-    percent = x_cor/float(max_x)
+    def __init__(self, *args):
+        if len(args) is 3:
+            self.set_rgb(args[0], args[1], args[2])
+        elif len(args) is 1:
+            self.set_hex(args[0])
+        else:
+            self.set_rgb(0, 0, 0)
+
+    def normalize_channels(self):
+        if self.r < 0:
+            self.r = 0
+        elif self.r > 255:
+            self.r = 255
+        if self.g < 0:
+            self.g = 0
+        elif self.g > 255:
+            self.g = 255
+        if self.b < 0:
+            self.b = 0
+        elif self.b > 255:
+            self.b = 255
     
-    a = d*percent+a*(1-percent)
-    b = e*percent+b*(1-percent)
-    c = f*percent+c*(1-percent)
-    if uniform:
-        return uniform_near_random_color(a, b, c, randomness)
-    return near_random_color(a, b, c, randomness)
-def near_random_color(a, b, c, randomness):
-    '''
-    Changes every rgb channel independently
-    '''
-    a = a +random.randint(-randomness, randomness)
-    if a < 0:
-        a = 0
-    if a > 255:
-        a = 255
-    b = b +random.randint(-randomness, randomness)
-    if b < 0:
-        b = 0
-    if b > 255:
-        b = 255
-    c = c +random.randint(-randomness, randomness)
-    if c < 0:
-        c = 0
-    if c > 255:
-        c = 255
-    return '%02x%02x%02x'%(a, b, c)
+    def shuffle_rgb(self, randomness):
+        self.r += random.randint(-randomness, randomness)
+        self.g += random.randint(-randomness, randomness)
+        self.b += random.randint(-randomness, randomness)
+        self.normalize_channels()
+    
+    def shuffle_brightness(self, randomness):
+        offset = random.randint(-randomness, randomness)
+        self.r += offset
+        self.g += offset
+        self.b += offset
+        self.normalize_channels()        
 
-def uniform_near_random_color(a, b, c, randomness):
-    '''
-    Same as near_random_color() but the randomness should only affect the brightness
-    '''
-    offset = random.randint(0, randomness)
-    a = a+offset
-    if a < 0:
-        a = 0
-    if a > 255:
-        a = 255
-    b = b+offset
-    if b < 0:
-        b = 0
-    if b > 255:
-        b = 255
-    c = c+offset
-    if c < 0:
-        c = 0
-    if c > 255:
-        c = 255
-    return '%02x%02x%02x'%(a, b, c)
+    def print_rgb(self):
+        print('\033[31mR:\033[0m', self.r)
+        print('\033[32mG:\033[0m', self.g)
+        print('\033[34mB:\033[0m', self.b)
 
-def random_color():
-    a = random.randint(0, 255)
-    b = random.randint(0, 255)
-    c = random.randint(0, 255)
-    return '%02x%02x%02x'%(a, b, c)
+class Config():
+    def load(self, filename):
+        with open(filename, 'r') as fp:
+            jconf = json.load(fp)
+            self.first_color = Color(jconf['first_color'])
+            self.second_color = Color(jconf['second_color'])
+            self.edge_len = jconf['edge_len']
+            self.random_colors = jconf['random_colors']
+            self.random_vertex = jconf['random_vertex']
+            self.height = jconf['height']
+            self.width = jconf['width']
+            self.max_color_offset = jconf['max_color_offset']
+            self.uniform_rgb_offset = jconf['uniform_rgb_offset']
 
-def add_path(vertices, color):
-    '''
-    Creates the triangle element as svg path given its three points as a list and its colour
-    '''
-    first_v = vertices[0]
-    second_v = vertices[1]
-    third_v = vertices[2]
-    string = '<path d="m '
-    string += str(first_v[0])
-    string += ','
-    string += str(first_v[1])
-    string += " "
-    string += str(second_v[0]-first_v[0])
-    string += ','
-    string += str(second_v[1]-first_v[1])
-    string += " "
-    string += str(third_v[0]-second_v[0])
-    string += ','
-    string += str(third_v[1]-second_v[1])
-    string += ' z" style="fill:#'+color+'"/>'
-    return string
+    def load_default(self):
+        self.first_color = Color('#000000')
+        self.second_color = Color('#ffffff')
+        self.edge_len = 50
+        self.random_colors = True
+        self.random_vertex = 35
+        self.height = 1080
+        self.width = 1920
+        self.max_color_offset = 20
+        self.uniform_rgb_offset = True
 
-def insert_vertex(arry):
-    '''
-    Draws the vertices of the given list of points
-    For debugging purpose
-    '''
-    for i in range(0, len(arry)):
-        print '<circle cx="'+str(arry[i][0])+'" cy="'+str(arry[i][1])+'" r="1.5" fill="#ff0000" stroke-width="5"/>'
-def load_config(namefile):
-    fp = open(namefile, 'r')
-    data = json.load(fp)
-    fp.close()
-    return data['width'], data['height'], data['edgelen'], data['randomvertex'], data['randomcolor'], data['firstcolor'], data['secondcolor'], data['uniform_rgb_offset'], data['randomcolors']
+    def __init__(self, filename):
+        self.load_default()
+        self.load(filename)
 
-def save_config(namefile, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9):
-    fp = open(namefile, 'w')
-    config = dict(width=arg1, height=arg2, edgelen=arg3, randomvertex=arg4, randomcolor=arg5, firstcolor=arg6, secondcolor=arg7, uniform_rgb_offset=arg8, randomcolors=arg9)
-    json.dump(config, fp)
-    fp.close()
+class Point():
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+class PointsMap():
+    def generate(self, length, height, edge_len):
+        '''
+        Create a list of vertices that can be used to create equilateral
+        triangles with edlegen as lenght of each side
+        Rows with odd index are shifted to the right by edge_len/2
+        '''
+        n_row = 5 + int(float(height) / (edge_len * math.sin(math.pi / 3.0)))
+        n_column = 5 + int(float(length) / edge_len)
+        temp_array = []
+        for i in range(0, n_row):
+            for j in range(0, n_column):
+                offset = 0
+                if i % 2 == 1:
+                    offset = 1
+                temp_array.append(Point(
+                    float(j * edge_len + offset * edge_len / 2.0),
+                    i * edge_len * math.sin(math.pi / 3.0)))
+        self.n_column = n_column
+        self.points = temp_array
+
+    def __init__(self, length, height, edge_len):
+        self.generate(length, height, edge_len)
+
+    def shuffle_points(self, radius):
+        '''
+        Returns a list of vertices moved from another list
+        The movement is radial with random angle and radius between 0.3*radius
+        and 1*radius
+        '''
+        for point in self.points:
+            effective_radius = random.randint(30, 100) * radius / 100.0
+            angle = random.randint(0, 360) * 2 * math.pi / 360
+            point.x += effective_radius * math.cos(angle)
+            point.y += effective_radius * math.sin(angle)
+
+
+class Triangle:
+    def set_points(self, p1, p2, p3):
+        '''
+        Set p1, p2 and p3 as vertices
+        '''
+        self.p1 = p1
+        self.p2 = p2
+        self.p3 = p3
+
+    def get_center(self):
+        '''
+        Return coordinates of center
+        '''
+        return Point((self.p1.x + self.p2.x + self.p3.x) / 3.0,
+                     (self.p1.y + self.p2.y + self.p3.y) / 3.0)
+
+    def set_color_by_pos(self, l_color, r_color, max_x):
+        '''
+        Set self color between l_color and r_color range by self position
+        '''
+        center = self.get_center()
+        if center.x < 0:
+            self.color = l_color
+        elif center.x > max_x:
+            self.color = r_color
+        else:
+            percent = (center.x) / max_x
+            r = (1-percent) * l_color.r + percent * r_color.r
+            g = (1-percent) * l_color.g + percent * r_color.g
+            b = (1-percent) * l_color.b + percent * r_color.b
+            #print((int(r), int(g), int(b)))
+            self.color = Color(int(r), int(g), int(b))
+            self.color.normalize_channels()
+            #self.color.print_rgb()
+
+    def __init__(self):
+        zero = Point(0, 0)
+        self.set_points(zero, zero, zero)
+        self.color = Color()
+    def export_center(self):
+        c=self.get_center()
+        return '<circle cx="{}" cy="{}" r="5" fill="red" />'.format(c.x, c.y)
+    def export_svg(self):
+        '''
+        Return the triangle element as svg path
+        '''
+        s = '<path d="M {},{} L{},{} L{},{} Z" style="fill:{}"/>'
+        s = s.format(self.p1.x, self.p1.y,
+                     self.p2.x, self.p2.y,
+                     self.p3.x, self.p3.y,
+                     self.color.get_hex())
+        return s+self.export_center()
+
+class SvgBox():
+    def __init__(self, width, height):
+        self.head = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+                     '<svg xmlns:dc="http://purl.org/dc/elements/1.1/" '
+                     'xmlns:cc="http://creativecommons.org/ns#" '
+                     'xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" '
+                     'xmlns:svg="http://www.w3.org/2000/svg" '
+                     'xmlns="http://www.w3.org/2000/svg"\n'
+                     'version="1.1"\n'
+                     'viewBox="0 0 {w} {h}"\n'
+                     'height="{h}"\nwidth="{w}">\n'
+                     '<g transform="translate(-100.0,-100.0)">\n')\
+                     .format(w=width, h=height)
+        self.tbody = ''
+        self.defs = ('<defs>\n<linearGradient id="grad1" '
+                     'x1="0%" y1="0%" x2="100%" y2="0%">\n'
+                     '<stop offset="0%" style="stop-color:{};'
+                     'stop-opacity:1" />\n'
+                     '<stop offset="100%" style="stop-color:{};'
+                     'stop-opacity:1" />\n</linearGradient>\n</defs>\n')
+        self.end = '</g>\n</svg>'
+    def set_bg_colors(self, left_color, right_color):
+        self.defs = self.defs.format(left_color.get_hex(),
+                                     right_color.get_hex())
+
+    def add_body(self, text):
+        self.tbody +=text
+    def export(self):
+        print(self.head+self.defs+self.tbody+self.end)
+
 def main():
-    if len(sys.argv) < 2:
-        width, heigth, size_edge, randomness, color_randomness, left_color, right_color, uniform_rgb_offset, random_colors = load_config("config.json")
+    config = Config("config.json")
+    map = PointsMap(config.width, config.height, config.edge_len)
+    map.shuffle_points(config.random_vertex * config.edge_len // 100)
+    box = SvgBox(config.width, config.height)
+    left_color = Color()
+    right_color = Color()
+    if config.random_colors is True:
+        left_color.set_random()
+        right_color.set_random()
     else:
-        width = int(sys.argv[1])
-        heigth = int(sys.argv[2])
-        size_edge = float(sys.argv[3])
-        randomness = float(sys.argv[4])
-        color_randomness = int(sys.argv[5])
-        left_color = sys.argv[6]
-        right_color = sys.argv[7]
-        uniform_rgb_offset = int(sys.argv[8])
-        random_colors = int (sys.argv[9])
-        save_config("config.json", width, heigth, size_edge, randomness, color_randomness, left_color, right_color, uniform_rgb_offset, random_colors)
-    n_columns, array = create_array_map(width, heigth, size_edge)
-    array = move_points_random(array, randomness*size_edge/100)
-
-
-    base_text = '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:svg="http://www.w3.org/2000/svg" xmlns="http://www.w3.org/2000/svg"\n'
-    base_text += 'version="1.1"\nviewBox="0 0 %s %s"\nheight="%spx"\nwidth="%spx">\n'%(width, heigth, heigth, width)
-    if random_colors == 1:
-        a = random.randint(0, 255)
-        b = random.randint(0, 255)
-        c = random.randint(0, 255)
-        d = random.randint(0, 255)
-        e = random.randint(0, 255)
-        f = random.randint(0, 255)
-        left_color = '%02x%02x%02x'%(a, b, c)
-        right_color = '%02x%02x%02x'%(d, e, f)
-    color_1 = str(rgb_to_int(left_color))
-    color_2 = str(rgb_to_int(right_color))
-    base_text += '<g transform="translate(%s,%s)"\n>'%(-size_edge, -size_edge)
-    base_text += '<defs>\n<linearGradient id="grad1" x1="0%%" y1="0%%" x2="100%%" y2="0%%">\n<stop offset="0%%" style="stop-color:rgb%s;stop-opacity:1" />\n<stop offset="100%%" style="stop-color:rgb%s;stop-opacity:1" />\n</linearGradient>\n</defs>\n'%(color_1, color_2)
-    base_text += '<path id="rect" d="m %s,%s %s,0.0 0.0,%s %s,0.0 z" fill="url(#grad1)"/>'%(size_edge, size_edge, width, heigth, -width)
-    print base_text
-    for t in range(0, len(array)-n_columns):
-        if t%n_columns != n_columns-1:
-            offset_odd_row = (t/n_columns)%2
-            vertices = [array[t], array[t+1], array[t+n_columns+offset_odd_row]]
-            print add_path(vertices, hard_gradient_center(vertices, width, left_color, right_color, color_randomness, uniform_rgb_offset))
-    for t in range(n_columns, len(array)-1):
-        if t%n_columns != n_columns-1:
-            offset_odd_row = (t/n_columns)%2
-            vertices = [array[t], array[t+1], array[t-n_columns+offset_odd_row]]
-            print add_path(vertices, hard_gradient_center(vertices, width, left_color, right_color, color_randomness, uniform_rgb_offset))
-    print '</g>\n</svg>'
+        left_color = config.first_color
+        right_color = config.second_color
+    box.set_bg_colors(left_color, right_color)
+    box.add_body(('<path id="rect" d="m {},{} {},0.0 0.0,{} {},0.0 z" '
+                  'fill="url(#grad1)"/>').format(
+                                                config.edge_len,
+                                                config.edge_len,
+                                                config.width,
+                                                config.height,
+                                                -config.width))
+    
+    #/\ - shape
+    for i in range(0, len(map.points)-map.n_column):
+        if i%map.n_column != map.n_column-1:
+            offset_odd_row = (i//map.n_column)%2
+            t = Triangle()
+            t.set_points(
+                map.points[i],
+                map.points[i+1],
+                map.points[i+map.n_column+offset_odd_row])
+            t.set_color_by_pos(left_color, right_color, config.width)
+            if config.uniform_rgb_offset:
+                t.color.shuffle_brightness(config.max_color_offset)
+            else:
+                t.color.shuffle_rgb(config.max_color_offset)
+            box.add_body(t.export_svg()+'\n')
+    #\/ - shape
+    
+    for i in range(map.n_column, len(map.points)-1):
+        if i%map.n_column != map.n_column-1:
+            offset_odd_row = (i//map.n_column)%2
+            t = Triangle()
+            t.set_points(
+                map.points[i],
+                map.points[i+1],
+                map.points[i-map.n_column+offset_odd_row])
+            t.set_color_by_pos(left_color, right_color, config.width)
+            if config.uniform_rgb_offset:
+                t.color.shuffle_brightness(config.max_color_offset)
+            else:
+                t.color.shuffle_rgb(config.max_color_offset)
+            box.add_body(t.export_svg()+'\n')
+    box.export()
 if __name__ == "__main__":
     main()
