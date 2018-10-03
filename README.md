@@ -15,8 +15,6 @@ Usage:
   right_color = Color on the right, must be written as #xxxxxx or xxxxxx
   uniform_mode = Set it to true to make the color randomizer affect only brightness of each triangle
   random_colors = Set it to true to force random left and right color
-  Running:
-  python3 triangle.py > example.svg
 ```
-example.svg with above example
+Example result with default config of python3 triangle.py > example.svg 
 <img src="./example.svg">
