@@ -1,1 +1,11 @@
-{"firstcolor": "ffffff", "randomcolors": 1, "randomvertex": 35.0, "uniform_rgb_offset": 1, "width": 1920, "edgelen": 80.0, "randomcolor": 20, "secondcolor": "000000", "height": 1080}
+{
+    "left_color": "000000",
+    "random_colors": true,
+    "random_vertex": 35.0,
+    "uniform_rgb_offset": true,
+    "width": 1920,
+    "edge_len": 100.0,
+    "max_color_offset": 10,
+    "right_color": "000000",
+    "height": 1080
+}

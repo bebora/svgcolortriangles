@@ -1,25 +1,20 @@
 # svgcolortriangles
-Create svg images with triangles using python in linux
+Create svg images with triangles using Python 3
 ```
 Usage:
-  python triangle.py [ARGS] > yourfile.svg
+  python3 triangle.py > yourfile.svg
 
--Arguments:
-  The script loads the config.json settings if it doesn't receive any argument
-  Otherwise you must write all the arguments needed in the following order:
-  width height edgelen randomness_points randomness_colors left_color right_color uniform_mode random_colors
+  The script loads the config.json settings. Its content is as follows:
   
   width = Width of the image
   height = Heigth of the image
-  edgelen = Lenght of the side of each equilateral triangle before being transformed
-  randomness_points = The max percentage of randomness of each point. High values mess things up
-  randomness_colors = The max difference between original colors and randomized colors for each RGB channel
+  edge_len = Roughly the size of every triangle
+  random_vertex = The max percentage of randomness of each point. High values mess things up
+  max_color_offset = The max difference between original colors and randomized colors for each RGB channel
   left_color = Color on the left, must be written as #xxxxxx or xxxxxx
   right_color = Color on the right, must be written as #xxxxxx or xxxxxx
-  uniform_mode = Set it to 1 to make the color randomizer affect only brightness of each triangle, else 0
-  random_colors = Set it to 1 to force random left and right color, else 0
-  For example:
-  python triangle.py 1920 1080 100 35 20 '#ff662a' '#22ffe3' 1 0 > example.svg
+  uniform_mode = Set it to true to make the color randomizer affect only brightness of each triangle
+  random_colors = Set it to true to force random left and right color
 ```
-example.svg with above example
+Example result with default config of python3 triangle.py > example.svg 
 <img src="./example.svg">
