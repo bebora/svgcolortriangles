@@ -244,21 +244,29 @@ class SvgBox():
         self.tbody = '<g transform="translate(-{},-{})">\n'
         self.defs = ('<defs>\n<linearGradient id="grad1" '
                      'x1="0%" y1="0%" x2="100%" y2="0%">\n'
-                     '<stop offset="0%" style="stop-color:{};'
-                     'stop-opacity:1" />\n'
-                     '<stop offset="100%" style="stop-color:{};'
-                     'stop-opacity:1" />\n</linearGradient>\n</defs>\n')
+                     '{}</linearGradient>\n</defs>\n')
+        self.gradient = ''
         self.end = '</g>\n</svg>'
 
-    def set_bg(self, width, height, left_color, right_color):
-        self.defs = self.defs.format(left_color.get_hex(),
-                                     right_color.get_hex())
+    def set_gradient(self, colors):
+        step_width = 100 / (len(colors) - 1)
+        for i in range(0, len(colors)-1):
+            self.gradient += ('<stop offset="{}%" style="stop-color:{}"/>\n'\
+                              .format(i * step_width, colors[i].get_hex()))
+        self.gradient += '<stop offset="100%" style="stop-color:{}"/>'\
+                         .format(colors[-1].get_hex())
+        self.defs = self.defs.format(self.gradient)
+
+    def set_bg(self, width, height, colors):
+        self.set_gradient(colors)
         self.defs += ('<path id="rect" d="m {},{} {},0.0 0.0,{} {},0.0 z" '
                       'fill="url(#grad1)"/>').format(0,
                                                      0,
                                                      width,
                                                      height,
                                                      -width)
+    
+    
     def set_offset(self, edge_len):
         self.tbody = self.tbody.format(edge_len, edge_len)
 
@@ -283,7 +291,7 @@ def main():
     else:
         colors = config.colors
     box.set_offset(0)
-    box.set_bg(config.width, config.height, Color('#000000'), Color('#000000'))
+    box.set_bg(config.width, config.height, colors)
     # /\ - shape
     for i in range(0, len(map.points)-map.n_column):
         if i % map.n_column != map.n_column-1:
