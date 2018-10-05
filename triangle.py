@@ -84,8 +84,7 @@ class Color:
 
 class Config():
     def load_default(self):
-        self.left_color = Color('#000000')
-        self.right_color = Color('#ffffff')
+        self.colors = [Color('#000000'), Color('#ffffff')]
         self.edge_len = 50
         self.random_colors = True
         self.random_vertex = 35
@@ -98,8 +97,7 @@ class Config():
         try:
             with open(filename, 'r') as fp:
                 jconf = json.load(fp)
-                self.left_color = Color(jconf['left_color'])
-                self.right_color = Color(jconf['right_color'])
+                self.colors = [Color(i) for i in jconf['colors']]
                 self.edge_len = jconf['edge_len']
                 self.random_colors = jconf['random_colors']
                 self.random_vertex = jconf['random_vertex']
@@ -179,22 +177,35 @@ class Triangle:
         return Point((self.p1.x + self.p2.x + self.p3.x) / 3.0,
                      (self.p1.y + self.p2.y + self.p3.y) / 3.0)
 
-    def set_color_by_pos(self, l_color, r_color, max_x):
+    def set_color_by_pos(self, colors, max_x):
         '''
-        Set self color between l_color and r_color range by self position
+        Set self color by self position using colors' steps
         '''
-        center = self.get_center()
-        if center.x < 0:
-            self.color = Color(l_color.get_hex())
-        elif center.x > max_x:
-            self.color = Color(r_color.get_hex())
+        if len(colors) is 0:
+            self.color = Color(0, 0, 0)
+        if len(colors) is 1:
+            self.color = Color(colors[0].get_hex())
         else:
-            percent = (center.x) / max_x
-            r = (1-percent) * l_color.r + percent * r_color.r
-            g = (1-percent) * l_color.g + percent * r_color.g
-            b = (1-percent) * l_color.b + percent * r_color.b
-            self.color = Color(int(r), int(g), int(b))
-            self.color.normalize_channels()
+            center = self.get_center()
+            if center.x <= 0:
+                self.color = Color(colors[0].get_hex())
+            elif center.x >= max_x:
+                self.color = Color(colors[-1].get_hex())
+            else:
+                n_steps = len(colors) - 1
+                step_width = max_x / n_steps
+                i = 0
+                while i * step_width < center.x:
+                    i += 1
+                i -= 1
+                l_color = colors[i]
+                r_color = colors[i + 1]
+                percent = (center.x % step_width) / step_width
+                r = (1-percent) * l_color.r + percent * r_color.r
+                g = (1-percent) * l_color.g + percent * r_color.g
+                b = (1-percent) * l_color.b + percent * r_color.b
+                self.color = Color(int(r), int(g), int(b))
+                self.color.normalize_channels()
 
     def __init__(self):
         zero = Point(0, 0)
@@ -263,16 +274,16 @@ def main():
     map = PointsMap(config.width, config.height, config.edge_len)
     map.shuffle_points(config.random_vertex * config.edge_len / 100)
     box = SvgBox(config.width, config.height)
-    left_color = Color()
-    right_color = Color()
     if config.random_colors is True:
-        left_color.set_random()
-        right_color.set_random()
+        l = Color()
+        r = Color()
+        l.set_random()
+        r.set_random()
+        colors = [l, r]
     else:
-        left_color = config.left_color
-        right_color = config.right_color
-    box.set_offset(config.edge_len)
-    box.set_bg(config.width, config.height, left_color, right_color)
+        colors = config.colors
+    box.set_offset(0)
+    box.set_bg(config.width, config.height, Color('#000000'), Color('#000000'))
     # /\ - shape
     for i in range(0, len(map.points)-map.n_column):
         if i % map.n_column != map.n_column-1:
@@ -282,7 +293,7 @@ def main():
                 map.points[i],
                 map.points[i+1],
                 map.points[i+map.n_column+offset_odd_row])
-            t.set_color_by_pos(left_color, right_color, config.width)
+            t.set_color_by_pos(colors, config.width)
             if config.uniform_rgb_offset:
                 t.color.shuffle_brightness(config.max_color_offset)
             else:
@@ -297,7 +308,7 @@ def main():
                 map.points[i],
                 map.points[i+1],
                 map.points[i-map.n_column+offset_odd_row])
-            t.set_color_by_pos(left_color, right_color, config.width)
+            t.set_color_by_pos(colors, config.width)
             if config.uniform_rgb_offset:
                 t.color.shuffle_brightness(config.max_color_offset)
             else:
