@@ -92,6 +92,7 @@ class Config():
         self.width = 1920
         self.max_color_offset = 20
         self.uniform_rgb_offset = True
+        self.vertical = False
 
     def load(self, filename):
         try:
@@ -105,6 +106,7 @@ class Config():
                 self.width = jconf['width']
                 self.max_color_offset = jconf['max_color_offset']
                 self.uniform_rgb_offset = jconf['uniform_rgb_offset']
+                self.vertical = jconf['vertical']
         except:
             print("Error reading", filename, file=sys.stderr)
             self.load_default()
@@ -231,6 +233,8 @@ class Triangle:
 
 class SvgBox():
     def __init__(self, width, height):
+        self.width = width
+        self.height = height
         self.head = ('<?xml version="1.0" encoding="UTF-8"?>\n'
                      '<svg xmlns:dc="http://purl.org/dc/elements/1.1/" '
                      'xmlns:cc="http://creativecommons.org/ns#" '
@@ -240,58 +244,85 @@ class SvgBox():
                      'version="1.1"\n'
                      'viewBox="0 0 {w} {h}"\n'
                      'height="{h}"\nwidth="{w}">\n')\
-                     .format(w=width, h=height)
-        self.tbody = '<g transform="translate(-{},-{})">\n'
+            .format(w=self.width, h=self.height)
+        self.tbody = '<g{}>\n'
         self.defs = ('<defs>\n<linearGradient id="grad1" '
                      'x1="0%" y1="0%" x2="100%" y2="0%">\n'
                      '{}</linearGradient>\n</defs>\n')
         self.gradient = ''
         self.end = '</g>\n</svg>'
 
+    def set_vertical(self):
+        self.tbody = self.tbody.format(' transform="scale(-1, 1) rotate(90)"')
+
+    def set_horizontal(self):
+        self.tbody = self.tbody.format('')
+
     def set_gradient(self, colors):
         step_width = 100 / (len(colors) - 1)
         for i in range(0, len(colors)-1):
-            self.gradient += ('<stop offset="{}%" style="stop-color:{}"/>\n'\
+            self.gradient += ('<stop offset="{}%" style="stop-color:{}"/>\n'
                               .format(i * step_width, colors[i].get_hex()))
         self.gradient += '<stop offset="100%" style="stop-color:{}"/>'\
                          .format(colors[-1].get_hex())
         self.defs = self.defs.format(self.gradient)
 
-    def set_bg(self, width, height, colors):
+    def set_bg(self, colors, vertical):
         self.set_gradient(colors)
-        self.defs += ('<path id="rect" d="m {},{} {},0.0 0.0,{} {},0.0 z" '
-                      'fill="url(#grad1)"/>').format(0,
-                                                     0,
-                                                     width,
-                                                     height,
-                                                     -width)
-    
-    
-    def set_offset(self, edge_len):
-        self.tbody = self.tbody.format(edge_len, edge_len)
+        if vertical:
+            self.defs += ('<path id="rect" d="m {},{} {},0.0 0.0,{} {},0.0 z" '
+                          'fill="url(#grad1)"/>').format(0,
+                                                         0,
+                                                         self.height,
+                                                         self.width,
+                                                         -self.height)
+        else:
+            self.defs += ('<path id="rect" d="m {},{} {},0.0 0.0,{} {},0.0 z" '
+                          'fill="url(#grad1)"/>').format(0,
+                                                         0,
+                                                         self.width,
+                                                         self.height,
+                                                         -self.width)
+        self.tbody = self.tbody + self.defs
 
     def add_body(self, text):
         self.tbody += text
 
+    def get_body(self):
+        return self.tbody
+
     def export(self):
-        print(self.head+self.defs+self.tbody+self.end)
+        print(self.head+self.get_body()+self.end)
 
 
 def main():
     config = Config("config.json")
-    map = PointsMap(config.width, config.height, config.edge_len)
-    map.shuffle_points(config.random_vertex * config.edge_len / 100)
-    box = SvgBox(config.width, config.height)
+    if config.vertical == 'random':
+        if random.randint(0, 1):
+            config.vertical = True
+        else:
+            config.vertical = False
+    if config.vertical:
+        map = PointsMap(config.height, config.width, config.edge_len)
+        box = SvgBox(config.width, config.height)
+        map.shuffle_points(config.random_vertex * config.edge_len / 100)
+        box.set_vertical()
+        max_axis_value = config.height
+    else:
+        map = PointsMap(config.width, config.height, config.edge_len)
+        box = SvgBox(config.width, config.height)
+        map.shuffle_points(config.random_vertex * config.edge_len / 100)
+        box.set_horizontal()
+        max_axis_value = config.width
     if config.random_colors is True:
-        l = Color()
-        r = Color()
-        l.set_random()
-        r.set_random()
-        colors = [l, r]
+        left = Color()
+        right = Color()
+        left.set_random()
+        right.set_random()
+        colors = [left, right]
     else:
         colors = config.colors
-    box.set_offset(0)
-    box.set_bg(config.width, config.height, colors)
+    box.set_bg(colors, config.vertical)
     # /\ - shape
     for i in range(0, len(map.points)-map.n_column):
         if i % map.n_column != map.n_column-1:
@@ -301,7 +332,7 @@ def main():
                 map.points[i],
                 map.points[i+1],
                 map.points[i+map.n_column+offset_odd_row])
-            t.set_color_by_pos(colors, config.width)
+            t.set_color_by_pos(colors, max_axis_value)
             if config.uniform_rgb_offset:
                 t.color.shuffle_brightness(config.max_color_offset)
             else:
@@ -316,7 +347,7 @@ def main():
                 map.points[i],
                 map.points[i+1],
                 map.points[i-map.n_column+offset_odd_row])
-            t.set_color_by_pos(colors, config.width)
+            t.set_color_by_pos(colors, max_axis_value)
             if config.uniform_rgb_offset:
                 t.color.shuffle_brightness(config.max_color_offset)
             else:
