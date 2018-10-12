@@ -211,6 +211,7 @@ class Triangle:
 
     def add_light_source(self, source_direction, max_color_offset):
         triangle_vector = np.cross(self.p2 - self.p1, self.p3 - self.p1)
+        # print(np.dot(triangle_vector, [0, 0, 1]))
         multiplier = np.dot(triangle_vector, source_direction)
         multiplier /= np.linalg.norm(source_direction) * np.linalg.norm(triangle_vector)
         self.color.edit_brightness(int(multiplier * max_color_offset))
@@ -351,8 +352,10 @@ def main():
             offset_odd_row = (i//map.n_column) % 2
             t = Triangle()
             t.set_points(
-                map.points[i],
+                # i and i+1 swapped to get always the z component of the
+                # vector perpendicular to the triangle positive
                 map.points[i+1],
+                map.points[i],
                 map.points[i-map.n_column+offset_odd_row])
             t.set_color_by_pos(colors, max_axis_value)
             if config.uniform_rgb_offset:
