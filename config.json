@@ -1,11 +1,11 @@
 {
-    "colors": ["008020", "008020", "ffffff", "ffffff","ffa500", "ffa500"],
+    "colors": ["808080", "808080"],
     "random_colors": true,
     "random_vertex": 35.0,
     "uniform_rgb_offset": true,
     "width": 1920,
     "edge_len": 100.0,
-    "max_color_offset": 10,
+    "max_color_offset": 20,
     "height": 1080,
     "vertical": "random"
 }
